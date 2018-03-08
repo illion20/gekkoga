@@ -205,36 +205,31 @@ class Ga {
 
     for (let i = 0; i < this.populationAmt; i++) {
 
-     if (this.mainObjective == 'score') {
+      if (this.mainObjective == 'score') {
 
-       if (populationProfits[i] < 0 && populationSharpes[i] < 0) {
+        if(isFinite(populationSharpes[i])) {
+          populationScores[i] = 1e8 + populationSharpes[i];
+        } else {
+          populationScores[i] = 0;
+        }
 
-         populationScores[i] = (populationProfits[i] * populationSharpes[i]) * -1;
+        if (populationScores[i] > maxFitness[2]) {
 
-       } else {
+          maxFitness = [populationProfits[i], populationSharpes[i], populationScores[i], i];
 
-         populationScores[i] = Math.tanh(populationProfits[i] / 3) * Math.tanh(populationSharpes[i] / 0.25);
+        }
 
-       }
+        fitnessSum += populationScores[i];
 
-       if (populationScores[i] > maxFitness[2]) {
-
-         maxFitness = [populationProfits[i], populationSharpes[i], populationScores[i], i];
-
-       }
-
-     } else if (this.mainObjective == 'profit') {
+      } else if (this.mainObjective == 'profit') {
 
         if (populationProfits[i] > maxFitness[0]) {
 
           maxFitness = [populationProfits[i], populationSharpes[i], populationScores[i], i];
 
         }
-
+        fitnessSum += populationProfits[i];
       }
-
-      fitnessSum += populationProfits[i];
-
     }
 
     if (fitnessSum === 0) {
@@ -246,10 +241,15 @@ class Ga {
       }
 
     } else {
-      for (let j = 0; j < this.populationAmt; j++) {
-        selectionProb[j] = populationProfits[j] / fitnessSum;
+      if (this.mainObjective == 'score') {
+        for (let j = 0; j < this.populationAmt; j++) {
+          selectionProb[j] = populationScores[j] / fitnessSum;
+        }
+      } else if (this.mainObjective == 'profit') {
+        for (let j = 0; j < this.populationAmt; j++) {
+          selectionProb[j] = populationProfits[j] / fitnessSum;
+        }
       }
-
     }
 
     let newPopulation = [];
@@ -271,6 +271,7 @@ class Ga {
         }
 
       }
+      if(!a) console.log(`A prob: ${selectedProb}`);
       selectedProb = randomExt.float(1, 0);
 
       for (let k = 0; k < this.populationAmt; k++) {
@@ -285,7 +286,7 @@ class Ga {
         }
 
       }
-
+      if(!b) console.log(`B prob: ${selectedProb}`);
       let res = this.crossover(this.mutate(a, this.mutateElements), this.mutate(b, this.mutateElements));
       newPopulation.push(res[0]);
       newPopulation.push(res[1]);
@@ -336,7 +337,7 @@ class Ga {
       });
 
       // These properties will be outputted every epoch, remove property if not needed
-      const properties = ['balance', 'profit', 'sharpe', 'market', 'relativeProfit', 'yearlyProfit', 'relativeYearlyProfit', 'startPrice', 'endPrice', 'trades'];
+      const properties = ['balance', 'profit', 'sharpe', 'market', 'relativeProfit', 'startPrice', 'endPrice', 'trades', 'ptrades', 'drawdown', 'grossLoss', 'grossProfit', 'winRate'];
       const report = body.report;
       let result = { profit: 0, metrics: false };
 
@@ -350,8 +351,8 @@ class Ga {
 
         }, {});
 
-        result = { profit: body.report.profit, sharpe: body.report.sharpe, metrics: picked };
-
+        //result = { profit: body.report.profit, sharpe: body.report.sharpe, metrics: picked };
+        result = { profit: body.report.profit, sharpe: body.report.winRate * body.report.profit, metrics: picked };
       }
 
       return result;
@@ -450,108 +451,108 @@ class Ga {
       this.notifynewhigh = false;
       if (this.mainObjective == 'score') {
         if (score >= allTimeMaximum.score) {
-            this.notifynewhigh = true;
-            allTimeMaximum.parameters = population[position];
-            allTimeMaximum.otherMetrics = otherPopulationMetrics[position];
-            allTimeMaximum.score = score;
-            allTimeMaximum.profit = profit;
-            allTimeMaximum.sharpe = sharpe;
-            allTimeMaximum.epochNumber = epochNumber;
+          this.notifynewhigh = true;
+          allTimeMaximum.parameters = population[position];
+          allTimeMaximum.otherMetrics = otherPopulationMetrics[position];
+          allTimeMaximum.score = score;
+          allTimeMaximum.profit = profit;
+          allTimeMaximum.sharpe = sharpe;
+          allTimeMaximum.epochNumber = epochNumber;
 
         }
       } else if (this.mainObjective == 'profit') {
         if (profit >= allTimeMaximum.profit) {
-            this.notifynewhigh = true;
-            allTimeMaximum.parameters = population[position];
-            allTimeMaximum.otherMetrics = otherPopulationMetrics[position];
-            allTimeMaximum.score = score;
-            allTimeMaximum.profit = profit;
-            allTimeMaximum.sharpe = sharpe;
-            allTimeMaximum.epochNumber = epochNumber;
+          this.notifynewhigh = true;
+          allTimeMaximum.parameters = population[position];
+          allTimeMaximum.otherMetrics = otherPopulationMetrics[position];
+          allTimeMaximum.score = score;
+          allTimeMaximum.profit = profit;
+          allTimeMaximum.sharpe = sharpe;
+          allTimeMaximum.epochNumber = epochNumber;
 
         }
       }
 
       console.log(`
-    --------------------------------------------------------------
-    Epoch number: ${epochNumber}
-    Time it took (seconds): ${(endTime - startTime) / 1000}
-    Max score: ${score}
-    Max profit: ${profit} ${this.currency}
-    Max sharpe: ${sharpe}
-    Max profit position: ${position}
-    Max parameters:
-    `,
+        --------------------------------------------------------------
+        Epoch number: ${epochNumber}
+        Time it took (seconds): ${(endTime - startTime) / 1000}
+        Max score: ${score}
+        Max profit: ${profit} ${this.currency}
+        Max sharpe: ${sharpe}
+        Max profit position: ${position}
+        Max parameters:
+        `,
         population[position],
         `
-    Other metrics:
-    `,
+        Other metrics:
+        `,
         otherPopulationMetrics[position]);
 
-      // Prints out the whole population with its fitness,
-      // useful for finding properties that make no sense and debugging
-      // for(let element in population){
-      //
-      //     console.log('Fitness: '+populationProfits[element]+' Properties:');
-      //     console.log(population[element]);
-      //
-      // }
+        // Prints out the whole population with its fitness,
+        // useful for finding properties that make no sense and debugging
+        // for(let element in population){
+        //
+        //     console.log('Fitness: '+populationProfits[element]+' Properties:');
+        //     console.log(population[element]);
+        //
+        // }
 
-      console.log(`
-    --------------------------------------------------------------
-    Global Maximums:
-    Score: ${allTimeMaximum.score}
-    Profit: ${allTimeMaximum.profit} ${this.currency}
-    Sharpe: ${allTimeMaximum.sharpe}
-    parameters: \n\r`,
-    allTimeMaximum.parameters,
-    `
-    Global maximum so far:
-    `,
-        allTimeMaximum.otherMetrics,
-        `
-    --------------------------------------------------------------
-    `);
+        console.log(`
+          --------------------------------------------------------------
+          Global Maximums:
+          Score: ${allTimeMaximum.score}
+          Profit: ${allTimeMaximum.profit} ${this.currency}
+          Sharpe: ${allTimeMaximum.sharpe}
+          parameters: \n\r`,
+          allTimeMaximum.parameters,
+          `
+          Global maximum so far:
+          `,
+          allTimeMaximum.otherMetrics,
+          `
+          --------------------------------------------------------------
+          `);
 
-      // store in json
-      const json = JSON.stringify(allTimeMaximum);
-      await fs.writeFile(`./results/${this.configName}-${this.currency}_${this.asset}.json`, json, 'utf8').catch(err => console.log(err) );
+          // store in json
+          const json = JSON.stringify(allTimeMaximum);
+          await fs.writeFile(`./results/${this.configName}-${this.currency}_${this.asset}.json`, json, 'utf8').catch(err => console.log(err) );
 
-      if (this.sendemail && this.notifynewhigh) {
-        var transporter = nodemailer.createTransport({
-          service: this.senderservice,
-          auth: {
-            user: this.sender,
-            pass: this.senderpass
+          if (this.sendemail && this.notifynewhigh) {
+            var transporter = nodemailer.createTransport({
+              service: this.senderservice,
+              auth: {
+                user: this.sender,
+                pass: this.senderpass
+              }
+            });
+            var mailOptions = {
+              from: this.sender,
+              to: this.receiver,
+              subject: `Profit: ${allTimeMaximum.profit} ${this.currency}`,
+              text: json
+            };
+            transporter.sendMail(mailOptions, function(error, info){
+              if (error) {
+                console.log(error);
+              } else {
+                console.log('Email sent: ' + info.response);
+              }
+            });
           }
-        });
-        var mailOptions = {
-          from: this.sender,
-          to: this.receiver,
-          subject: `Profit: ${allTimeMaximum.profit} ${this.currency}`,
-          text: json
-        };
-        transporter.sendMail(mailOptions, function(error, info){
-          if (error) {
-            console.log(error);
-          } else {
-            console.log('Email sent: ' + info.response);
-          }
-        });
+
+
+          population = newPopulation;
+
+        }
+
+        console.log(`Finished!
+          All time maximum:
+          ${allTimeMaximum}`);
+
+        }
+
       }
 
 
-      population = newPopulation;
-
-    }
-
-    console.log(`Finished!
-  All time maximum:
-  ${allTimeMaximum}`);
-
-  }
-
-}
-
-
-module.exports = Ga;
+      module.exports = Ga;
