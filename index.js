@@ -5,6 +5,8 @@ const rp = require('request-promise');
 const { some } = require('bluebird');
 const fs = require('fs-extra');
 const flat = require('flat');
+const Discord = require('discord.js');
+const client = new Discord.Client();
 
 class Ga {
 
@@ -14,6 +16,9 @@ class Ga {
     this.mainObjective = mainObjective;
     this.getProperties = getProperties;
     this.apiUrl = apiUrl;
+    this.discordNotify = notifications.discord.enabled;
+    this.discordToken = notifications.discord.token;
+    this.discordChannel = notifications.discord.channel;
     this.sendemail = notifications.email.enabled;
     this.senderservice = notifications.email.senderservice;
     this.sender = notifications.email.sender;
@@ -399,6 +404,15 @@ class Ga {
       otherMetrics: {}
     };
 
+    if (this.discordNotify){
+      client.login(this.discordToken);
+      client.on('ready', () => {
+        let botname = "Brainz";
+        if(client.user.username != botname) client.user.setUsername(botname);
+        client.channels.get(this.discordChannel).send("Running some evolutions...");
+      });
+    }
+
     if (loaded_config) {
 
       console.log(`Loaded previous config from ${this.configName}-${this.currency}_${this.asset}.json`);
@@ -517,6 +531,18 @@ class Ga {
           // store in json
           const json = JSON.stringify(allTimeMaximum);
           await fs.writeFile(`./results/${this.configName}-${this.currency}_${this.asset}.json`, json, 'utf8').catch(err => console.log(err) );
+
+          if (this.discordNotify && this.notifynewhigh) {
+            /**var note = new Discord.RichEmbed()
+                .setColor("#629551")
+                .setTimestamp(order.timestamp)
+                .addField("Profit",round(order.simpleCumQty,3)+" BTC",true)
+                .addField("Sharpe","$ "+order.price,true)
+                .addField("Contracts",order.cumQty,true)
+                .addField("Realized PnL",profit+" %",true)
+                .setFooter(`Epoch ${allTimeMaximum.epochNumber}`);*/
+            client.channels.get(this.discordChannel).send("New genetic sequence has evolved! **Profit: "+allTimeMaximum.profit.toFixed(5)+" BTC**```json\n"+JSON.stringify(allTimeMaximum.otherMetrics)+"```");
+          }
 
           if (this.sendemail && this.notifynewhigh) {
             var transporter = nodemailer.createTransport({
