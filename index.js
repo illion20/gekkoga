@@ -342,7 +342,7 @@ class Ga {
       });
 
       // These properties will be outputted every epoch, remove property if not needed
-      const properties = ['balance', 'profit', 'sharpe', 'market', 'relativeProfit', 'startPrice', 'endPrice', 'trades', 'ptrades', 'drawdown', 'grossLoss', 'grossProfit', 'winRate'];
+      const properties = ['balance', 'profit', 'sharpe', 'market', 'relativeProfit', 'startPrice', 'endPrice', 'trades', 'ptrades', 'drawdown', 'grossLoss', 'grossProfit', 'winRate', 'profitFactor', 'avgWinTrade', 'avgLosingTrade'];
       const report = body.report;
       let result = { profit: 0, metrics: false };
 
