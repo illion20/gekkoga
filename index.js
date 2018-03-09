@@ -535,8 +535,8 @@ class Ga {
           if (this.discordNotify && this.notifynewhigh) {
             var embed = new Discord.RichEmbed()
                 .setColor("#61afef")
-                .addAuthor(`Epoch ${allTimeMaximum.epochNumber}`)
-                .addDescription("```json\n"+JSON.stringify(allTimeMaximum.otherMetrics)+"```")
+                .setAuthor(`Epoch ${allTimeMaximum.epochNumber}`)
+                .setDescription("```json\n"+JSON.stringify(allTimeMaximum.otherMetrics)+"```")
                 .setFooter(`Period: ${this.baseConfig.gekkoConfig.backtest.daterange.from} to ${this.baseConfig.gekkoConfig.backtest.daterange.to}`);
             client.channels.get(this.discordChannel).send({ content: "New genetic sequence has evolved! **Profit: "+allTimeMaximum.relativeProfit.toFixed(2)+" %**", embed});
           }
