@@ -533,15 +533,11 @@ class Ga {
           await fs.writeFile(`./results/${this.configName}-${this.currency}_${this.asset}.json`, json, 'utf8').catch(err => console.log(err) );
 
           if (this.discordNotify && this.notifynewhigh) {
-            /**var note = new Discord.RichEmbed()
-                .setColor("#629551")
-                .setTimestamp(order.timestamp)
-                .addField("Profit",round(order.simpleCumQty,3)+" BTC",true)
-                .addField("Sharpe","$ "+order.price,true)
-                .addField("Contracts",order.cumQty,true)
-                .addField("Realized PnL",profit+" %",true)
-                .setFooter(`Epoch ${allTimeMaximum.epochNumber}`);*/
-            client.channels.get(this.discordChannel).send("New genetic sequence has evolved! **Profit: "+allTimeMaximum.profit.toFixed(5)+" BTC**```json\n"+JSON.stringify(allTimeMaximum.otherMetrics)+"```");
+            var embed = new Discord.RichEmbed()
+                .setColor("#61afef")
+                .addAuthor(`Epoch ${allTimeMaximum.epochNumber}`)
+                .setFooter(`Period: ${this.baseConfig.gekkoConfig.backtest.daterange.from} to ${this.baseConfig.gekkoConfig.backtest.daterange.to}`);
+            client.channels.get(this.discordChannel).send({ content: "New genetic sequence has evolved! **Profit: "+allTimeMaximum.relativeProfit.toFixed(2)+" %**```json\n"+JSON.stringify(allTimeMaximum.otherMetrics)+"```", embed});
           }
 
           if (this.sendemail && this.notifynewhigh) {
