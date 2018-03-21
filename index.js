@@ -261,7 +261,8 @@ class Ga {
 
     while (newPopulation.length < this.populationAmt * (1 - this.variation)) {
 
-      let a, b;
+      let a=0, b=0;
+      while(a==b) {
       let selectedProb = randomExt.float(1, 0);
 
       for (let k = 0; k < this.populationAmt; k++) {
@@ -276,7 +277,7 @@ class Ga {
         }
 
       }
-      if(!a) console.log(`A prob: ${selectedProb}`);
+
       selectedProb = randomExt.float(1, 0);
 
       for (let k = 0; k < this.populationAmt; k++) {
@@ -291,7 +292,7 @@ class Ga {
         }
 
       }
-      if(!b) console.log(`B prob: ${selectedProb}`);
+    }
       let res = this.crossover(this.mutate(a, this.mutateElements), this.mutate(b, this.mutateElements));
       newPopulation.push(res[0]);
       newPopulation.push(res[1]);
@@ -464,7 +465,7 @@ class Ga {
 
       this.notifynewhigh = false;
       if (this.mainObjective == 'score') {
-        if (score >= allTimeMaximum.score) {
+        if (score > allTimeMaximum.score) {
           this.notifynewhigh = true;
           allTimeMaximum.parameters = population[position];
           allTimeMaximum.otherMetrics = otherPopulationMetrics[position];
@@ -475,7 +476,7 @@ class Ga {
 
         }
       } else if (this.mainObjective == 'profit') {
-        if (profit >= allTimeMaximum.profit) {
+        if (profit > allTimeMaximum.profit) {
           this.notifynewhigh = true;
           allTimeMaximum.parameters = population[position];
           allTimeMaximum.otherMetrics = otherPopulationMetrics[position];
