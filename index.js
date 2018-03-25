@@ -410,7 +410,7 @@ class Ga {
       client.on('ready', () => {
         let botname = "Brainz";
         if(client.user.username != botname) client.user.setUsername(botname);
-        client.channels.get(this.discordChannel).send("Running some evolutions...");
+        //client.channels.get(this.discordChannel).send("Running some evolutions...");
       });
     }
 
