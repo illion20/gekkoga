@@ -10,7 +10,7 @@ const client = new Discord.Client();
 
 class Ga {
 
-  constructor({ gekkoConfig, stratName, mainObjective, populationAmt, parallelqueries, variation, mutateElements, notifications, getProperties, apiUrl }, configName ) {
+  constructor({ gekkoConfig, stratName, mainObjective, populationAmt, parallelqueries, variation, mutateElements, notifications, getProperties, apiUrl, maxEpoch }, configName ) {
     this.configName = configName.replace(/\.js|config\//gi, "");
     this.stratName = stratName;
     this.mainObjective = mainObjective;
@@ -29,6 +29,7 @@ class Ga {
     this.previousBestParams = null;
     this.populationAmt = populationAmt;
     this.parallelqueries = parallelqueries;
+    this.maxEpoch = maxEpoch;
     this.variation = variation;
     this.mutateElements = mutateElements;
     this.baseConfig = {
@@ -200,6 +201,49 @@ class Ga {
     }
 
     return flat.unflatten(tmp);
+  }
+
+  // For the given population and fitness, returns new population and max score
+  runEpoch2(population, populationProfits, populationSharpes, populationScores, epoch) {
+    let fitnessSum = 0;
+    let maxFitness = [0, 0, 0, 0];
+
+    for (let i = 0; i < this.populationAmt; i++) {
+
+      if (this.mainObjective == 'score') {
+
+        if(isFinite(populationSharpes[i])) {
+          populationScores[i] = 1e8 + populationSharpes[i];
+        } else {
+          populationScores[i] = 0;
+        }
+
+        if (populationScores[i] > maxFitness[2]) {
+
+          maxFitness = [populationProfits[i], populationSharpes[i], populationScores[i], i];
+
+        }
+
+        fitnessSum += populationScores[i];
+
+      } else if (this.mainObjective == 'profit') {
+
+        if (populationProfits[i] > maxFitness[0]) {
+
+          maxFitness = [populationProfits[i], populationSharpes[i], populationScores[i], i];
+
+        }
+        fitnessSum += populationProfits[i];
+      }
+    }
+
+    let newPopulation = [];
+
+    for (let k = 0; k < this.populationAmt; k++) {
+      newPopulation.push(this.getProperties(epoch*this.populationAmt+k));
+    }
+
+    return [newPopulation, maxFitness];
   }
 
   // For the given population and fitness, returns new population and max score
@@ -443,7 +487,7 @@ class Ga {
 
     console.log(`Starting GA with epoch populations of ${this.populationAmt}, running ${this.parallelqueries} units at a time!`);
 
-    while (1) {
+    while (this.maxEpoch == 0 || this.maxEpoch > epochNumber) {
 
       const startTime = new Date().getTime();
       const res = await this.fitnessApi(population);
@@ -455,7 +499,8 @@ class Ga {
 
       let endTime = new Date().getTime();
       epochNumber++;
-      let results = this.runEpoch(population, populationProfits, populationSharpes, populationScores);
+      //let results = this.runEpoch(population, populationProfits, populationSharpes, populationScores);
+      let results = this.runEpoch2(population, populationProfits, populationSharpes, populationScores, epochNumber);
       let newPopulation = results[0];
       let maxResult = results[1];
       let score = maxResult[2];
